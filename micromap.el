@@ -15,9 +15,9 @@
 
 (require 'cl-lib)
 (require 'color)
-(require 'm)
 
 (eval-when-compile
+  (require 'm)
   (require 'rx))
 
 (defgroup micromap nil
