@@ -74,7 +74,8 @@ present in the mode line when graphics are enabled."
 
   (if micromap-mode
       (setf mode-line-percent-position micromap--percent-position)
-    (setf mode-line-percent-position (default-value 'mode-line-percent-position))))
+    (setf mode-line-percent-position
+          (default-value 'mode-line-percent-position))))
 
 (defun micromap--color-blend (c1 c2 alpha)
   "Blend the two colors C1 and C2 with ALPHA.
