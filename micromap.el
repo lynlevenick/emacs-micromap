@@ -1,8 +1,15 @@
 ;;; micromap --- Graphical buffer percentage indicator -*- lexical-binding: t -*-
 
+;; Author: Lyn Levenick
+;; Keywords: mode-line
 ;; Package-Requires: ((emacs "26.3") (m "1.0.0"))
+;; URL: https://github.com/lynlevenick/emacs-micromap
 
 ;;; Commentary:
+
+;; Provides a minor-mode, ‘micromap-mode’, which replaces
+;; the standard textual percentage indicator in the mode
+;; line with a graphical indicator.
 
 ;;; Code:
 
@@ -10,27 +17,49 @@
 (require 'color)
 (require 'm)
 
+(eval-when-compile
+  (require 'rx))
+
 (defgroup micromap nil
   "A minor-mode percent position indicator for the mode line."
   :group 'mode-line)
 
+(defun micromap--update-color (symbol newval &rest _)
+  "Update parsed colors when raw colors are changed.
+
+SYMBOL and NEWVAL are as in ‘add-variable-watcher’."
+
+  (put symbol :parsed
+       (if (string-match (rx ?#
+                             (group (repeat 2 hex))
+                             (group (repeat 2 hex))
+                             (group (repeat 2 hex)))
+                         newval)
+           (list (/ (string-to-number (match-string 1 newval) 16) 255.0)
+                 (/ (string-to-number (match-string 2 newval) 16) 255.0)
+                 (/ (string-to-number (match-string 3 newval) 16) 255.0))
+         (color-name-to-rgb newval))))
+
+(add-variable-watcher 'micromap-foreground #'micromap--update-color)
 (defcustom micromap-foreground "#FFFFFF"
   "Color for ‘micromap-mode’s visible region."
   :group 'micromap
   :type '(choice (string :tag "Hex color") color))
 
+(add-variable-watcher 'micromap-background #'micromap--update-color)
 (defcustom micromap-background "#000000"
   "Color for ‘micromap-mode’s background."
   :group 'micromap
   :type '(choice (string :tag "Hex color") color))
 
-(defconst micromap-percent-position
+(defconst micromap--percent-position
   `(:eval (if (display-graphic-p)
               (micromap--xpm (* 2 (frame-char-width)) (frame-char-height)
                              (micromap--line-number-at-point (window-start))
                              (micromap--line-number-at-point (window-end))
                              (micromap--last-line-number)
-                             micromap-foreground micromap-background)
+                             (get 'micromap-foreground :parsed)
+                             (get 'micromap-background :parsed))
             ',mode-line-percent-position))
   "Graphical display of percentage offset when ‘display-graphic-p’.
 Falls back to ‘mode-line-percent-position’.")
@@ -44,31 +73,14 @@ present in the mode line when graphics are enabled."
   :global t
 
   (if micromap-mode
-      (setf mode-line-percent-position micromap-percent-position)
+      (setf mode-line-percent-position micromap--percent-position)
     (setf mode-line-percent-position (default-value 'mode-line-percent-position))))
-
-(defun micromap--parse-color (color)
-  "Convert hex COLOR to RGB triplet in [0.0 1.0]."
-  (declare (pure t) (side-effect-free t))
-
-  ;; Directly parse 24-bit hex format rather than relying on
-  ;; ‘color-name-to-rgb’ as it is doesn't work in some contexts.
-  (if (string-match "#\\([[:xdigit:]]\\{2\\}\\)\\([[:xdigit:]]\\{2\\}\\)\\([[:xdigit:]]\\{2\\}\\)" color)
-      (list (/ (string-to-number (match-string 1 color) 16) 255.0)
-            (/ (string-to-number (match-string 2 color) 16) 255.0)
-            (/ (string-to-number (match-string 3 color) 16) 255.0))
-    (color-name-to-rgb color)))
 
 (defun micromap--color-blend (c1 c2 alpha)
   "Blend the two colors C1 and C2 with ALPHA.
 ALPHA is a number between 0.0 and 1.0 which corresponds to the
 influence of C1 on the result."
   (declare (pure t) (side-effect-free t))
-
-  (unless (consp c1)
-    (cl-callf micromap--parse-color c1))
-  (unless (consp c2)
-    (cl-callf micromap--parse-color c2))
 
   (pcase-let ((`(,c1r ,c1g ,c1b) c1)
               (`(,c2r ,c2g ,c2b) c2)
@@ -79,18 +91,24 @@ influence of C1 on the result."
      (+ (* c1b alpha) (* c2b inv-alpha))
      2)))
 
-(defun micromap--xpm-header (width height &rest colors)
-  "Return XPM header for an image of WIDTH and HEIGHT.
+(defun micromap--xpm-header (width height start-frac end-frac)
+  "Return XPM header for ‘micromap--xpm’.
 
-COLORS are mapped to numbers 0-9."
+WIDTH and HEIGHT declare the size of the XPM.
+START-FRAC and END-FRAC determine the blending between
+‘micromap-foreground’ and ‘micromap-background’."
   (declare (pure t) (side-effect-free t))
 
-  (apply #'concat
-         (format "/* XPM */static char*_[]={\"%i %i %i 1\","
-                 width height (length colors))
-         (cl-loop for color in colors
-                  for idx from 0
-                  collect (format "\"%i c %s\"," idx color))))
+  (let ((parsed-foreground (get 'micromap-foreground :parsed))
+        (parsed-background (get 'micromap-background :parsed)))
+    (format "/* XPM */static char*_[]={\"%i %i 4 1\",\"0 c %s\",\"1 c %s\",\"2 c %s\",\"3 c %s\","
+            width height
+            micromap-background
+            (micromap--color-blend parsed-foreground parsed-background
+                                   start-frac)
+            micromap-foreground
+            (micromap--color-blend parsed-foreground parsed-background
+                                   end-frac))))
 
 (defun micromap--xpm-row (character width)
   "Return a row of XPM data of WIDTH made up of CHARACTER."
@@ -133,17 +151,14 @@ against OFF-COLOR."
          (end (* height- (/ hl-end hl-max)))
          (start- (1- start))
          (end+ (1+ end))
-         (start-color (micromap--color-blend on-color off-color
-                                       (- (fceiling start) start)))
-         (end-color (micromap--color-blend on-color off-color
-                                     (- end (ffloor end))))
          (line-on (micromap--xpm-row-on width))
          (line-off (micromap--xpm-row-off width)))
     (propertize "??%" 'display
                 (create-image
                  (apply #'concat
                         (micromap--xpm-header width height
-                                        off-color start-color on-color end-color)
+                                              (- (fceiling start) start)
+                                              (- end (ffloor end)))
                         (cl-loop for i below height
                                  collect (cond
                                           ((<= start i end) line-on)
