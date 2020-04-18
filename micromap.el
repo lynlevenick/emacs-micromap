@@ -57,9 +57,7 @@ SYMBOL and NEWVAL are as in ‘add-variable-watcher’."
               (micromap--xpm (* 2 (frame-char-width)) (frame-char-height)
                              (micromap--line-number-at-point (window-start))
                              (micromap--line-number-at-point (window-end))
-                             (micromap--last-line-number)
-                             (get 'micromap-foreground :parsed)
-                             (get 'micromap-background :parsed))
+                             (micromap--last-line-number))
             ',mode-line-percent-position))
   "Graphical display of percentage offset when ‘display-graphic-p’.
 Falls back to ‘mode-line-percent-position’.")
@@ -67,6 +65,7 @@ Falls back to ‘mode-line-percent-position’.")
 ;;;###autoload
 (define-minor-mode micromap-mode
   "Display a graphical percentage indicator in the mode line.
+
 This replaces the textual percentage indicator that is usually
 present in the mode line when graphics are enabled."
   :group 'micromap
@@ -91,6 +90,39 @@ influence of C1 on the result."
      (+ (* c1g alpha) (* c2g inv-alpha))
      (+ (* c1b alpha) (* c2b inv-alpha))
      2)))
+
+(m-defun micromap--last-line-number ()
+  "Return line number at ‘point-max’.
+
+Unreliable if there have been modifications to the buffer
+since the last ‘redisplay’.
+
+Does not work for buffers which are not displayed.
+
+Does not work if either ‘line-number-display-limit’ or
+‘line-number-display-limit-width’ are exceeded at ‘point-max’."
+  :buffer-local t
+  :clear-on edit
+
+  (save-excursion
+    (goto-char (point-max))
+    (string-to-number (format-mode-line "%l"))))
+
+(defun micromap--line-number-at-point (point)
+  "Return line number at POINT.
+
+Unreliable if there have been modifications to the buffer
+since the last ‘redisplay’.
+
+Does not work for buffers which are not displayed.
+
+Does not work if either ‘line-number-display-limit’ or
+‘line-number-display-limit-width’ are exceeded at POINT."
+  (declare (side-effect-free t))
+
+  (save-excursion
+    (goto-char point)
+    (string-to-number (format-mode-line "%l"))))
 
 (defun micromap--xpm-header (width height start-frac end-frac)
   "Return XPM header for ‘micromap--xpm’.
@@ -137,12 +169,10 @@ START-FRAC and END-FRAC determine the blending between
 
   (micromap--xpm-row ?3 width))
 
-(m-defun micromap--xpm
-    (width height hl-start hl-end hl-max on-color off-color)
+(m-defun micromap--xpm (width height hl-start hl-end hl-max)
   "Generate WIDTH by HEIGHT xpm image.
 
-Highlight from HL-START to HL-END within [1 HL-MAX] with ON-COLOR
-against OFF-COLOR."
+Highlights from HL-START to HL-END within [1 HL-MAX]."
   :buffer-local t
 
   (unless (floatp hl-max)
@@ -172,39 +202,6 @@ against OFF-COLOR."
                                              ","
                                            "};")))
                  'xpm t :ascent 'center))))
-
-(m-defun micromap--last-line-number ()
-  "Return line number at ‘point-max’.
-
-Unreliable if there have been modifications to the buffer
-since the last ‘redisplay’.
-
-Does not work for buffers which are not displayed.
-
-Does not work if either ‘line-number-display-limit’ or
-‘line-number-display-limit-width’ are exceeded at ‘point-max’."
-  :buffer-local t
-  :clear-on edit
-
-  (save-excursion
-    (goto-char (point-max))
-    (string-to-number (format-mode-line "%l"))))
-
-(defun micromap--line-number-at-point (point)
-  "Return line number at POINT.
-
-Unreliable if there have been modifications to the buffer
-since the last ‘redisplay’.
-
-Does not work for buffers which are not displayed.
-
-Does not work if either ‘line-number-display-limit’ or
-‘line-number-display-limit-width’ are exceeded at POINT."
-  (declare (side-effect-free t))
-
-  (save-excursion
-    (goto-char point)
-    (string-to-number (format-mode-line "%l"))))
 
 (provide 'micromap)
 ;;; micromap.el ends here
