@@ -76,6 +76,68 @@ present in the mode line when graphics are enabled."
     (setf mode-line-percent-position
           (default-value 'mode-line-percent-position))))
 
+(m-defun micromap--xpm (width height hl-start hl-end hl-max)
+  "Generate WIDTH by HEIGHT xpm image.
+
+Highlights from HL-START to HL-END within [1 HL-MAX]."
+  :buffer-local t
+
+  (unless (floatp hl-max)
+    (cl-callf float hl-max))
+  (let* ((height- (1- height))
+         (start (* height- (/ (1- hl-start) hl-max)))
+         (end (* height- (/ hl-end hl-max))))
+    (propertize "??%" 'display
+                (create-image
+                 (apply #'concat
+                        (micromap--xpm-header width height
+                                              (- (fceiling start) start)
+                                              (- end (ffloor end)))
+                        (micromap--xpm-body width height start end))
+                 'xpm t :ascent 'center :scale 1))))
+
+(defun micromap--xpm-header (width height start-frac end-frac)
+  "Return XPM header for ‘micromap--xpm’.
+
+WIDTH and HEIGHT declare the size of the XPM.
+START-FRAC and END-FRAC determine the blending between
+‘micromap-foreground’ and ‘micromap-background’."
+  (declare (pure t) (side-effect-free t))
+
+  (let ((parsed-foreground (get 'micromap-foreground :parsed))
+        (parsed-background (get 'micromap-background :parsed)))
+    (format "/* XPM */static char*_[]={\"%i %i 4 1\",\"0 c %s\",\"1 c %s\",\"2 c %s\",\"3 c %s\","
+            width height
+            micromap-background
+            (micromap--color-blend parsed-foreground parsed-background
+                                   start-frac)
+            micromap-foreground
+            (micromap--color-blend parsed-foreground parsed-background
+                                   end-frac))))
+
+(defun micromap--xpm-body (width height start end)
+  "Return XPM body for ‘micromap--xpm’.
+
+WIDTH and HEIGHT declare the size of the XPM.
+START and END determine where foreground lines appear."
+
+  (let ((line-on (micromap--xpm-row-on width))
+        (line-off (micromap--xpm-row-off width))
+        (start- (1- start))
+        (end+ (1+ end))
+        (height- (1- height)))
+    (cl-loop for i below height
+             collect (cond
+                      ((<= start i end) line-on)
+                      ((< start- i end)
+                       (micromap--xpm-row-start-frac width))
+                      ((< start i end+)
+                       (micromap--xpm-row-end-frac width))
+                      (line-off))
+             collect (if (< i height-)
+                         ","
+                       "};"))))
+
 (defun micromap--color-blend (c1 c2 alpha)
   "Blend the two colors C1 and C2 with ALPHA.
 ALPHA is a number between 0.0 and 1.0 which corresponds to the
@@ -124,25 +186,6 @@ Does not work if either ‘line-number-display-limit’ or
     (goto-char point)
     (string-to-number (format-mode-line "%l"))))
 
-(defun micromap--xpm-header (width height start-frac end-frac)
-  "Return XPM header for ‘micromap--xpm’.
-
-WIDTH and HEIGHT declare the size of the XPM.
-START-FRAC and END-FRAC determine the blending between
-‘micromap-foreground’ and ‘micromap-background’."
-  (declare (pure t) (side-effect-free t))
-
-  (let ((parsed-foreground (get 'micromap-foreground :parsed))
-        (parsed-background (get 'micromap-background :parsed)))
-    (format "/* XPM */static char*_[]={\"%i %i 4 1\",\"0 c %s\",\"1 c %s\",\"2 c %s\",\"3 c %s\","
-            width height
-            micromap-background
-            (micromap--color-blend parsed-foreground parsed-background
-                                   start-frac)
-            micromap-foreground
-            (micromap--color-blend parsed-foreground parsed-background
-                                   end-frac))))
-
 (defun micromap--xpm-row (character width)
   "Return a row of XPM data of WIDTH made up of CHARACTER."
   (declare (pure t) (side-effect-free t))
@@ -168,40 +211,6 @@ START-FRAC and END-FRAC determine the blending between
   "Return a row of XPM data of WIDTH made up of the character 3."
 
   (micromap--xpm-row ?3 width))
-
-(m-defun micromap--xpm (width height hl-start hl-end hl-max)
-  "Generate WIDTH by HEIGHT xpm image.
-
-Highlights from HL-START to HL-END within [1 HL-MAX]."
-  :buffer-local t
-
-  (unless (floatp hl-max)
-    (cl-callf float hl-max))
-  (let* ((height- (1- height))
-         (start (* height- (/ (1- hl-start) hl-max)))
-         (end (* height- (/ hl-end hl-max)))
-         (start- (1- start))
-         (end+ (1+ end))
-         (line-on (micromap--xpm-row-on width))
-         (line-off (micromap--xpm-row-off width)))
-    (propertize "??%" 'display
-                (create-image
-                 (apply #'concat
-                        (micromap--xpm-header width height
-                                              (- (fceiling start) start)
-                                              (- end (ffloor end)))
-                        (cl-loop for i below height
-                                 collect (cond
-                                          ((<= start i end) line-on)
-                                          ((< start- i end)
-                                           (micromap--xpm-row-start-frac width))
-                                          ((< start i end+)
-                                           (micromap--xpm-row-end-frac width))
-                                          (line-off))
-                                 collect (if (< i height-)
-                                             ","
-                                           "};")))
-                 'xpm t :ascent 'center))))
 
 (provide 'micromap)
 ;;; micromap.el ends here
