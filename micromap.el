@@ -35,9 +35,9 @@ SYMBOL and NEWVAL are as in ‘add-variable-watcher’."
                              (group (repeat 2 hex))
                              (group (repeat 2 hex)))
                          newval)
-           (list (/ (string-to-number (match-string 1 newval) 16) 255.0)
-                 (/ (string-to-number (match-string 2 newval) 16) 255.0)
-                 (/ (string-to-number (match-string 3 newval) 16) 255.0))
+           (vector (/ (string-to-number (match-string 1 newval) 16) 255.0)
+                   (/ (string-to-number (match-string 2 newval) 16) 255.0)
+                   (/ (string-to-number (match-string 3 newval) 16) 255.0))
          (color-name-to-rgb newval))))
 
 (add-variable-watcher 'micromap-foreground #'micromap--update-color)
@@ -82,9 +82,9 @@ ALPHA is a number between 0.0 and 1.0 which corresponds to the
 influence of C1 on the result."
   (declare (pure t) (side-effect-free t))
 
-  (pcase-let ((`(,c1r ,c1g ,c1b) c1)
-              (`(,c2r ,c2g ,c2b) c2)
-              (inv-alpha (- 1 alpha)))
+  (pcase-let* ((`[,c1r ,c1g ,c1b] c1)
+               (`[,c2r ,c2g ,c2b] c2)
+               (inv-alpha (- 1 alpha)))
     (color-rgb-to-hex
      (+ (* c1r alpha) (* c2r inv-alpha))
      (+ (* c1g alpha) (* c2g inv-alpha))
