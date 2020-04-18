@@ -144,13 +144,11 @@ ALPHA is a number between 0.0 and 1.0 which corresponds to the
 influence of C1 on the result."
   (declare (pure t) (side-effect-free t))
 
-  (let ((c1r (aref c1 0)) (c1g (aref c1 1)) (c1b (aref c1 2))
-        (c2r (aref c2 0)) (c2g (aref c2 1)) (c2b (aref c2 2))
-        (inv-alpha (- 1 alpha)))
+  (let ((inv-alpha (- 1 alpha)))
     (color-rgb-to-hex
-     (+ (* c1r alpha) (* c2r inv-alpha))
-     (+ (* c1g alpha) (* c2g inv-alpha))
-     (+ (* c1b alpha) (* c2b inv-alpha))
+     (+ (* (aref c1 0) alpha) (* (aref c2 0) inv-alpha))
+     (+ (* (aref c1 1) alpha) (* (aref c2 1) inv-alpha))
+     (+ (* (aref c1 2) alpha) (* (aref c2 2) inv-alpha))
      2)))
 
 (m-defun micromap--last-line-number ()
