@@ -52,6 +52,9 @@ SYMBOL and NEWVAL are as in ‘add-variable-watcher’."
   :group 'micromap
   :type '(choice (string :tag "Hex color") color))
 
+(defconst micromap--former-percent-position nil
+  "Value of ‘mode-line-percent-position’ prior to enabling ‘micromap-mode’.")
+
 (defconst micromap--percent-position
   `(:eval (if (display-graphic-p)
               (micromap--xpm (* 2 (frame-char-width)) (frame-char-height)
@@ -72,9 +75,9 @@ present in the mode line when graphics are enabled."
   :global t
 
   (if micromap-mode
-      (setf mode-line-percent-position micromap--percent-position)
-    (setf mode-line-percent-position
-          (default-value 'mode-line-percent-position))))
+      (setf micromap--former-percent-position mode-line-percent-position
+            mode-line-percent-position micromap--percent-position)
+    (setf mode-line-percent-position micromap--former-percent-position)))
 
 (m-defun micromap--xpm (width height hl-start hl-end hl-max)
   "Generate WIDTH by HEIGHT xpm image.
