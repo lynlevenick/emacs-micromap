@@ -13,10 +13,10 @@
 
 ;;; Code:
 
-(require 'cl-lib)
 (require 'color)
 
 (eval-when-compile
+  (require 'cl-lib)
   (require 'm)
   (require 'rx))
 
