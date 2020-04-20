@@ -2,7 +2,7 @@
 
 ;; Author: Lyn Levenick
 ;; Keywords: mode-line
-;; Package-Requires: ((emacs "26.3") (m "1.0.0"))
+;; Package-Requires: ((emacs "26.3") (m "1.1.0"))
 ;; URL: https://github.com/lynlevenick/emacs-micromap
 
 ;;; Commentary:
@@ -60,7 +60,7 @@ SYMBOL and NEWVAL are as in ‘add-variable-watcher’."
               (micromap--xpm (* 2 (frame-char-width)) (frame-char-height)
                              (micromap--line-number-at-point (window-start))
                              (micromap--line-number-at-point (window-end))
-                             (micromap--last-line-number))
+                             (micromap--line-number-at-point (point-max)))
             ',mode-line-percent-position))
   "Graphical display of percentage offset when ‘display-graphic-p’.
 Falls back to ‘mode-line-percent-position’.")
@@ -154,24 +154,7 @@ influence of C1 on the result."
      (- (* (aref c1 2) alpha) (* (aref c2 2) inv-alpha))
      2)))
 
-(m-defun micromap--last-line-number ()
-  "Return line number at ‘point-max’.
-
-Unreliable if there have been modifications to the buffer
-since the last ‘redisplay’.
-
-Does not work for buffers which are not displayed.
-
-Does not work if either ‘line-number-display-limit’ or
-‘line-number-display-limit-width’ are exceeded at ‘point-max’."
-  :buffer-local t
-  :clear-on edit
-
-  (save-excursion
-    (goto-char (point-max))
-    (string-to-number (format-mode-line "%l"))))
-
-(defun micromap--line-number-at-point (point)
+(m-defun micromap--line-number-at-point (point)
   "Return line number at POINT.
 
 Unreliable if there have been modifications to the buffer
@@ -181,7 +164,9 @@ Does not work for buffers which are not displayed.
 
 Does not work if either ‘line-number-display-limit’ or
 ‘line-number-display-limit-width’ are exceeded at POINT."
-  (declare (side-effect-free t))
+  :buffer-local t
+  :clear-on edit
+  :storage hash
 
   (save-excursion
     (goto-char point)
