@@ -5,6 +5,11 @@
 ;; Package-Version: 1.0.0
 ;; URL: https://github.com/lynlevenick/emacs-micromap
 
+;; This file is not part of GNU Emacs.
+
+;; This file is free software; you can redistribute and/or
+;; modify it under the terms of the Apache License Version 2.
+
 ;;; Commentary:
 
 ;; Provides a minor-mode, ‘micromap-mode’, which replaces
