@@ -1,8 +1,8 @@
-;;; micromap --- Graphical buffer percentage indicator -*- lexical-binding: t -*-
+;;; micromap.el --- Graphical buffer percentage indicator -*- lexical-binding: t -*-
 
 ;; Author: Lyn Levenick
-;; Keywords: mode-line
 ;; Package-Requires: ((emacs "26.3") (m "1.1.0"))
+;; Package-Version: 1.0.0
 ;; URL: https://github.com/lynlevenick/emacs-micromap
 
 ;;; Commentary:
@@ -16,7 +16,7 @@
 (require 'color)
 
 (eval-when-compile
-  (require 'cl-macs)
+  (require 'cl-lib)
   (require 'm)
   (require 'rx))
 
