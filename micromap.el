@@ -42,18 +42,18 @@ SYMBOL and NEWVAL are as in ‘add-variable-watcher’."
 
 (add-variable-watcher 'micromap-foreground #'micromap--update-color)
 (defcustom micromap-foreground "#FFFFFF"
-  "Color for ‘micromap-mode’s visible region."
+  "Foreground color of micromap."
   :group 'micromap
   :type '(choice (string :tag "Hex color") color))
 
 (add-variable-watcher 'micromap-background #'micromap--update-color)
 (defcustom micromap-background "#000000"
-  "Color for ‘micromap-mode’s background."
+  "Background color of micromap."
   :group 'micromap
   :type '(choice (string :tag "Hex color") color))
 
 (defconst micromap--former-percent-position nil
-  "Value of ‘mode-line-percent-position’ prior to enabling ‘micromap-mode’.")
+  "Preserved ‘mode-line-percent-position’ value.")
 
 (defconst micromap--percent-position
   `(:eval (if (display-graphic-p)
@@ -63,7 +63,10 @@ SYMBOL and NEWVAL are as in ‘add-variable-watcher’."
                              (micromap--line-number-at-point (point-max)))
             ',mode-line-percent-position))
   "Graphical display of percentage offset when ‘display-graphic-p’.
-Falls back to ‘mode-line-percent-position’.")
+Falls back to ‘mode-line-percent-position’.
+
+‘mode-line-percent-position’ is evaluated when micromap is loaded.
+If modified elsewhere, results may be inconsistent.")
 
 ;;;###autoload
 (define-minor-mode micromap-mode
