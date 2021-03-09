@@ -22,8 +22,7 @@
 
 (eval-when-compile
   (require 'cl-lib)
-  (require 'm)
-  (require 'rx))
+  (require 'm))
 
 (defgroup micromap nil
   "A minor-mode percent position indicator for the mode line."
@@ -34,16 +33,7 @@
 
 SYMBOL and NEWVAL are as in ‘add-variable-watcher’."
 
-  (put symbol :parsed
-       (if (string-match (rx ?#
-                             (group (repeat 2 hex))
-                             (group (repeat 2 hex))
-                             (group (repeat 2 hex)))
-                         newval)
-           (vector (/ (string-to-number (match-string 1 newval) 16) 255.0)
-                   (/ (string-to-number (match-string 2 newval) 16) 255.0)
-                   (/ (string-to-number (match-string 3 newval) 16) 255.0))
-         (color-name-to-rgb newval))))
+  (put symbol :parsed (color-name-to-rgb newval)))
 
 (add-variable-watcher 'micromap-foreground #'micromap--update-color)
 (defcustom micromap-foreground "#FFFFFF"
