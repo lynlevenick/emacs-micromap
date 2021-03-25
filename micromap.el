@@ -2,7 +2,7 @@
 
 ;; Author: Lyn Levenick
 ;; Package-Requires: ((emacs "26.3") (memo "2.0.0"))
-;; Package-Version: 1.0.0
+;; Package-Version: 1.0.1
 ;; URL: https://github.com/lynlevenick/emacs-micromap
 
 ;; This file is not part of GNU Emacs.
@@ -33,7 +33,7 @@
 
 SYMBOL and NEWVAL are as in ‘add-variable-watcher’."
 
-  (put symbol :parsed (color-name-to-rgb newval)))
+  (put symbol :micromap-parsed (apply #'vector (color-name-to-rgb newval))))
 
 (add-variable-watcher 'micromap-foreground #'micromap--update-color)
 (defcustom micromap-foreground "#FFFFFF"
@@ -105,8 +105,8 @@ START-FRAC and END-FRAC determine the blending between
 ‘micromap-foreground’ and ‘micromap-background’."
   (declare (pure t) (side-effect-free t))
 
-  (let ((parsed-foreground (get 'micromap-foreground :parsed))
-        (parsed-background (get 'micromap-background :parsed)))
+  (let ((parsed-foreground (get 'micromap-foreground :micromap-parsed))
+        (parsed-background (get 'micromap-background :micromap-parsed)))
     (format "/* XPM */static char*_[]={\"%i %i 4 1\",\"0 c %s\",\"1 c %s\",\"2 c %s\",\"3 c %s\","
             width height
             micromap-background
