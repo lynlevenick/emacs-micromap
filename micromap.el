@@ -1,7 +1,7 @@
 ;;; micromap.el --- Graphical buffer percentage indicator -*- lexical-binding: t -*-
 
 ;; Author: Lyn Levenick
-;; Package-Requires: ((emacs "26.3") (m "1.1.0"))
+;; Package-Requires: ((emacs "26.3") (memo "2.0.0"))
 ;; Package-Version: 1.0.0
 ;; URL: https://github.com/lynlevenick/emacs-micromap
 
@@ -22,7 +22,7 @@
 
 (eval-when-compile
   (require 'cl-lib)
-  (require 'm))
+  (require 'memo))
 
 (defgroup micromap nil
   "A minor-mode percent position indicator for the mode line."
@@ -77,11 +77,11 @@ present in the mode line when graphics are enabled."
             mode-line-percent-position micromap--percent-position)
     (setf mode-line-percent-position micromap--former-percent-position)))
 
-(m-defun micromap--xpm (width height hl-start hl-end hl-max)
+(memo-defun micromap--xpm (width height hl-start hl-end hl-max)
   "Generate WIDTH by HEIGHT xpm image.
 
 Highlights from HL-START to HL-END within [1 HL-MAX]."
-  :buffer-local t
+  (memo :buffer-local t)
 
   (unless (floatp hl-max)
     (cl-callf float hl-max))
@@ -152,7 +152,7 @@ influence of C1 on the result."
      (- (* (aref c1 2) alpha) (* (aref c2 2) inv-alpha))
      2)))
 
-(m-defun micromap--line-number-at-point (point)
+(memo-defun micromap--line-number-at-point (point)
   "Return line number at POINT.
 
 Unreliable if there have been modifications to the buffer
@@ -162,9 +162,9 @@ Does not work for buffers which are not displayed.
 
 Does not work if either ‘line-number-display-limit’ or
 ‘line-number-display-limit-width’ are exceeded at POINT."
-  :buffer-local t
-  :clear-on edit
-  :storage hash
+  (memo :buffer-local t
+        :invalidate-on edit
+        :storage hash)
 
   (save-excursion
     (goto-char point)
@@ -176,22 +176,22 @@ Does not work if either ‘line-number-display-limit’ or
 
   (concat "\"" (make-string width character) "\""))
 
-(m-defun micromap--xpm-row-off (width)
+(memo-defun micromap--xpm-row-off (width)
   "Return a row of XPM data of WIDTH made up of the character 0."
 
   (micromap--xpm-row ?0 width))
 
-(m-defun micromap--xpm-row-start-frac (width)
+(memo-defun micromap--xpm-row-start-frac (width)
   "Return a row of XPM data of WIDTH made up of the character 1."
 
   (micromap--xpm-row ?1 width))
 
-(m-defun micromap--xpm-row-on (width)
+(memo-defun micromap--xpm-row-on (width)
   "Return a row of XPM data of WIDTH made up of the character 2."
 
   (micromap--xpm-row ?2 width))
 
-(m-defun micromap--xpm-row-end-frac (width)
+(memo-defun micromap--xpm-row-end-frac (width)
   "Return a row of XPM data of WIDTH made up of the character 3."
 
   (micromap--xpm-row ?3 width))
