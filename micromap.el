@@ -166,9 +166,11 @@ Does not work if either ‘line-number-display-limit’ or
         :invalidate-on edit
         :storage hash)
 
-  (save-excursion
-    (goto-char point)
-    (string-to-number (format-mode-line "%l"))))
+  (let ((line-number-display-limit nil)
+        (line-number-display-limit-width 2000000))
+    (save-excursion
+      (goto-char point)
+      (string-to-number (format-mode-line "%l")))))
 
 (defun micromap--xpm-row (character width)
   "Return a row of XPM data of WIDTH made up of CHARACTER."
