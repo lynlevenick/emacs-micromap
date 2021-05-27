@@ -47,8 +47,13 @@ SYMBOL and NEWVAL are as in ‘add-variable-watcher’."
   :group 'micromap
   :type '(choice (string :tag "Hex color") color))
 
+(defconst micromap--keymap
+  '(keymap (mode-line keymap
+                      (down-mouse-1 . micromap--scroll)))
+  "Keymap for ‘micromap--xpm’.")
+
 (defconst micromap--former-percent-position nil
-  "Preserved ‘mode-line-percent-position’ value.")
+  "Preserved ‘mode-line-position’ value for ‘mode-line-percent-position’.")
 
 (defconst micromap--percent-position
   `(:eval (if (display-graphic-p)
@@ -73,9 +78,47 @@ present in the mode line when graphics are enabled."
   :global t
 
   (if micromap-mode
-      (setf micromap--former-percent-position mode-line-percent-position
-            mode-line-percent-position micromap--percent-position)
-    (setf mode-line-percent-position micromap--former-percent-position)))
+      (let ((position
+             (cl-position-if #'(lambda (elt) (and (eq (car-safe (cdr-safe elt))
+                                                      'mode-line-percent-position)
+                                                  elt))
+                             mode-line-position)))
+        (setf micromap--former-percent-position
+              (elt mode-line-position position)
+              (elt mode-line-position position)
+              micromap--percent-position))
+    (let ((position
+           (cl-position micromap--percent-position mode-line-position)))
+      (setf (elt mode-line-position position)
+            micromap--former-percent-position))))
+
+(defun micromap--scroll-to (frac window)
+  "Scroll to approximate buffer position FRAC in WINDOW."
+
+  (with-selected-window window
+    (let* ((line (micromap--line-number-at-point (point)))
+           (last-line (micromap--line-number-at-point (point-max)))
+           (target (round (* last-line frac))))
+      (forward-line (- target line)))))
+
+(defun micromap--scroll (event)
+  "Handle click and drag events on micromap."
+  (interactive "e")
+
+  (let* ((posn (event-start event))
+         (win (posn-window posn))
+         (height (cdr (posn-object-width-height posn)))
+         (y (cdr (posn-object-x-y posn)))
+         (y-origin (- (cdr (mouse-absolute-pixel-position)) y))
+         (mouse-fine-grained-tracking t))
+    (micromap--scroll-to (/ (float y) height) win)
+    (track-mouse
+      (setf track-mouse 'dragging)
+      (while (and (setf event (read-event))
+                  (mouse-movement-p event))
+        (setf posn (event-end event)
+              y (min height (max 0 (- (cdr (mouse-absolute-pixel-position)) y-origin))))
+        (micromap--scroll-to (/ (float y) height) win)))))
 
 (memo-defun micromap--xpm (width height hl-start hl-end hl-max)
   "Generate WIDTH by HEIGHT xpm image.
@@ -88,7 +131,9 @@ Highlights from HL-START to HL-END within [1 HL-MAX]."
   (let* ((height- (1- height))
          (start (* height- (/ (1- hl-start) hl-max)))
          (end (* height- (/ hl-end hl-max))))
-    (propertize "??%" 'display
+    (propertize "??%" 'help-echo "mouse-1: Scroll"
+                'keymap micromap--keymap
+                'display
                 (create-image
                  (apply #'concat
                         (micromap--xpm-header width height
